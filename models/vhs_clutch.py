@@ -19,7 +19,6 @@ def main():
     b_length = 22.50
     c_height = 25.25
     d_length = 6
-    nub_diameter = 2
 
     seg_a = pipe(
         sphere(d=width, segments=RESOLUTION) +
@@ -57,18 +56,8 @@ def main():
         ])
     )
 
-    nub = pipe(
-        cylinder(h=width, d=nub_diameter, segments=RESOLUTION),
-        rotate([90, 0, 0]),
-        translate([
-            b_length - d_length + half_width + (nub_diameter / 2),
-            width / 2,
-            thickness
-        ])
-    )
-
     final = pipe(
-        seg_a + seg_b + seg_c + seg_d + nub,
+        seg_a + seg_b + seg_c + seg_d,
         rotate([90, 0, 0]),
         translate([0, 0, width / 2])
     )

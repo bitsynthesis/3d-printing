@@ -1,4 +1,4 @@
-3D printing models written in [SolidPython](https://github.com/SolidCode/SolidPython).
+3D printing models created with [SolidPython](https://github.com/SolidCode/SolidPython).
 
 ## Build from Source
 

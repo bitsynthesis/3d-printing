@@ -22,22 +22,6 @@ def main():
         translate([length - edge_length, 0, 0])
     )
 
-    # trough = pipe(
-    #     cube([length, width, trough_height]),
-    #     hole(),
-    #     translate([trough_length, 0, (height - trough_height) / 2])
-    # )
-    #
-    # trough_edge = pipe(
-    #     triangular_prism(
-    #         width, length - trough_length, ((spine_height - trough_height) / 2) - trough_padding
-    #     ),
-    #     rotate([0, 0, 90]),
-    #     translate([length, 0, ((spine_height - trough_height) / 2) - trough_padding])
-    # )
-    #
-    # final = spine + edge + trough + trough_edge
-
     screw_shaft = 5
     screw_head = 10
     screw_head_depth = 4

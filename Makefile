@@ -1,10 +1,16 @@
-.PHONY: all, clean, requirements, venv
+.PHONY: all, clean, requirements, scad, venv
 
 SRCS=$(wildcard models/*.py)
-TARGETS=$(patsubst models/%.py,build/%.scad,$(SRCS))
+STLS=$(patsubst models/%.py,build/%.stl,$(SRCS))
+SCADS=$(patsubst models/%.py,build/%.scad,$(SRCS))
 VENV=~/.venv/3d-printing
 
-all: $(TARGETS)
+all: $(STLS)
+
+scad: $(SCADS)
+
+build/%.stl: build/%.scad
+	openscad -o $@ $<
 
 build/%.scad: $(VENV) build
 	. $</bin/activate && PYTHONPATH=. python $(patsubst build/%.scad,models/%.py,$@)

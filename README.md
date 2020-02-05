@@ -2,7 +2,13 @@
 
 ## Build from Source
 
+Requires [OpenSCAD](https://www.openscad.org/) and Python 3.
+
+Run
+
     make
+
+STL and SCAD files for all models will be created in ./build
 
 ## Download STLs
 

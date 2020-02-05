@@ -67,7 +67,7 @@ def main():
     handle_diameter = gear_outer_diameter * 1.5
     handle_width = 2
 
-    slop_scaling = 0.95
+    slop_scaling = 0.875
 
     gear = _gear(
         gear_inner_diameter, gear_outer_diameter, gear_height, tooth_count, tooth_width

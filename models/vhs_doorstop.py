@@ -44,7 +44,7 @@ c_depth = 2.5
 def _finger(_pos: List[int], _length: int, _width: int, _depth: int):
     length = _length - finger_space
     width = _width - finger_space
-    depth = _depth + door_height
+    depth = _depth
 
     x = _pos[0] + (finger_space / 2)
     y = _pos[1] + (finger_space / 2)
@@ -54,23 +54,6 @@ def _finger(_pos: List[int], _length: int, _width: int, _depth: int):
         cube([length, width, depth]),
         translate([x, y, z]),
     )
-
-
-# def _skirt(_pos: List[int], _length: int, _width: int):
-#     mod = skirt_size - finger_space
-#
-#     length = _length + mod
-#     width = _width + mod
-#     height = skirt_height
-#
-#     x = _pos[0] - (mod / 2)
-#     y = _pos[1] - (mod / 2)
-#     z = max_depth
-#
-#     return pipe(
-#         cube([length, width, height]),
-#         translate([x, y, z]),
-#     )
 
 
 def _roof():
@@ -86,17 +69,32 @@ def _roof():
     )
 
 
-def _foundation():
-    length = b_length + b_pos[0] - finger_space
-    width = a_pos[1] + a_width - c_pos[1] - finger_space
-
-    x = finger_space / 2
-    y = c_pos[1] + (finger_space / 2)
-
+def _clear_left():
     return pipe(
-        cube([length, width, door_height]),
-        translate([x, y, max_depth])
+        cube([50, 50, max_depth + door_height]),
+        hole(),
+        translate([-50 + (finger_space / 2), -25, 0])
     )
+
+
+def _foundation():
+    skirt_diameter = roof_diameter - 3
+    half_diameter = skirt_diameter / 2
+    edge_height = 0.35
+
+    x = (roof_diameter / 2) + roof_offset[0]
+    y = (roof_diameter / 2) + roof_offset[1]
+
+    core = cylinder(h=door_height + roof_height, d=12, segments=200),
+
+    skirt = pipe(
+        cylinder(h=door_height + roof_height, r1=half_diameter, r2=2, segments=200),
+        translate([0, 0, edge_height])
+    )
+
+    edge = cylinder(h=edge_height, d=skirt_diameter, segments=200),
+
+    return pipe(skirt + edge, translate([x, y, max_depth]))
 
 
 def main():
@@ -104,13 +102,16 @@ def main():
     seg_b = _finger(b_pos, b_length, b_width, b_depth)
     seg_c = _finger(c_pos, c_length, c_width, c_depth)
 
-    # skirt_b = _skirt(b_pos, b_length, b_width)
-
     roof = _roof()
 
     foundation = _foundation()
 
-    final = seg_a + seg_b + seg_c + roof + foundation
+    final = pipe(
+        seg_a + seg_b + seg_c + roof + foundation + _clear_left(),
+        translate([roof_offset[0] * -1,roof_offset[1] * -1, 0]),
+        rotate([180, 0, 0]),
+        translate([0, 0, max_depth + door_height + roof_height])
+    )
 
     scad_render_to_file(final, "build/vhs_doorstop.scad")
 

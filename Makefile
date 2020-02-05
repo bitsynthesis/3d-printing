@@ -1,29 +1,21 @@
 .PHONY: all, clean, requirements, venv
 
-all: build/din_rail.scad \
-	build/rpi_3b_din_mount.scad \
-	build/vhs_clutch.scad \
-	build/vhs_doorstop.scad
+SRCS=$(wildcard models/*.py)
+TARGETS=$(patsubst models/%.py,build/%.scad,$(SRCS))
+VENV=~/.venv/3d-printing
 
-build/din_rail.scad: ~/.venv/3d-printing build
-	. $</bin/activate && PYTHONPATH=. python ./models/din_rail.py
+all: $(TARGETS)
 
-build/rpi_3b_din_mount.scad: ~/.venv/3d-printing build
-	. $</bin/activate && PYTHONPATH=. python ./models/rpi_3b_din_mount.py
+build/%.scad: $(VENV) build
+	. $</bin/activate && PYTHONPATH=. python $(patsubst build/%.scad,models/%.py,$@)
 
-build/vhs_clutch.scad: ~/.venv/3d-printing build
-	. $</bin/activate && PYTHONPATH=. python ./models/vhs_clutch.py
-
-build/vhs_doorstop.scad: ~/.venv/3d-printing build
-	. $</bin/activate && PYTHONPATH=. python ./models/vhs_doorstop.py
-
-~/.venv/3d-printing:
+$(VENV):
 	python3 -m venv $@
 
 build:
 	mkdir build
 
-requirements: ~/.venv/3d-printing
+requirements: $(VENV)
 	. $</bin/activate && pip install -r requirements.txt
 
 clean: build

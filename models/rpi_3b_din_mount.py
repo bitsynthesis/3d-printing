@@ -2,6 +2,17 @@ from solid import *
 from shared.main import *
 
 
+#     C
+#      \
+#       \
+# B-----|--| D
+#       |
+#       |
+#       |--|
+# B-----|--| E
+#       A
+
+
 def _spine(cfg):
     body = cube([cfg["length"], cfg["width"], cfg["height"] + 5]) # FIXME magic number
 

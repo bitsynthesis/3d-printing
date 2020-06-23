@@ -19,3 +19,12 @@ def triangular_prism(l, w, h):
        points=[[0, 0, 0], [l, 0, 0], [l, w, 0], [0, w, 0], [0, w, h], [l, w, h]],
        faces=[[0, 1, 2, 3], [5, 4, 3, 2], [0, 4, 5, 1], [0, 3, 4], [5, 2, 1]]
     )
+
+
+def tube(h, d, thickness, **kwargs):
+    positive = solid.cylinder(h=h, d=d, **kwargs)
+    negative = pipe(
+        solid.cylinder(h=h + 2, d=d - thickness, **kwargs),
+        solid.translate([0, 0, -1])
+    )
+    return positive - negative

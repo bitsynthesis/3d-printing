@@ -9,9 +9,9 @@ wall_thickness = 2.5
 smooth_segments = 200
 
 
-wall_height = 11
-wall_top_padding = 3
-wall_bottom_padding = 3
+wall_height = 12
+wall_top_padding = 2
+wall_bottom_padding = 5
 thread_height = wall_height - wall_top_padding - wall_bottom_padding
 
 
@@ -20,7 +20,14 @@ airlock_outer_diameter = 35
 airlock_inner_diameter = 11
 
 
-top_height = airlock_height
+outer_diameter = inner_diameter + (wall_thickness * 2)
+chamf_padding = 20
+chamf_height = (outer_diameter - airlock_outer_diameter - chamf_padding) / 2
+
+skirt_height = airlock_height - chamf_height
+grip_segments = 24
+oring_diameter = 4
+barb_width = 13.5
 
 
 def _lid():
@@ -34,56 +41,107 @@ def _lid():
             neck_in_degrees=6,
             neck_out_degrees=6
         ),
-        translate([0, 0, wall_bottom_padding])
+        translate([0, 0, wall_bottom_padding + skirt_height])
     )
 
-    outer_diameter = inner_diameter + (wall_thickness * 2)
-
     wall = cylinder(
-        h=wall_height,
+        h=wall_height + skirt_height,
         d=outer_diameter,
-        segments=24
+        segments=grip_segments
     )
 
     cutout = pipe(
         cylinder(h=wall_height + 2, d=inner_diameter, segments=smooth_segments),
-        translate([0, 0, -1])
+        translate([0, 0, skirt_height])
     )
 
-    top = cylinder(h=top_height, d=outer_diameter, segments=24)
+    cap = pipe(
+        wall - cutout + threads,
+        translate([0, 0, chamf_height])
+    )
 
     airlock_hole = pipe(
-        cylinder(h=top_height + 2, d=airlock_outer_diameter, segments=smooth_segments),
+        cylinder(h=airlock_height + 2, d=airlock_outer_diameter, segments=smooth_segments),
         translate([0, 0, -1])
     )
 
-    return pipe(wall - cutout + threads, translate([0, 0, top_height])) + top - airlock_hole
+    chamf = cylinder(
+        h=chamf_height,
+        d1=airlock_outer_diameter + (chamf_padding * 2),
+        d2=outer_diameter,
+        segments=grip_segments
+    )
+
+    oring_gutter = pipe(
+        circle(d=oring_diameter, segments=smooth_segments),
+        translate([(inner_diameter - oring_diameter) / 2, 0, 0]),
+        rotate_extrude(convexity=10, segments=smooth_segments),
+        translate([0, 0, airlock_height])
+    )
+
+    return cap + chamf - airlock_hole - oring_gutter
 
 
 # TODO
-# - move bottom of airlock chamber up a little for durability
 # - thicker center post walls?
 def _airlock():
-    outer_wall = tube(h=airlock_height, d=airlock_outer_diameter, thickness=wall_thickness, segments=smooth_segments)
-
-    inner_wall = tube(h=airlock_height, d=airlock_inner_diameter, thickness=wall_thickness, segments=smooth_segments)
-
-    bottom_height = (airlock_outer_diameter - airlock_inner_diameter) / 2
-
-    bottom = cylinder(
-        h=bottom_height,
-        d1=airlock_inner_diameter,
-        d2=airlock_outer_diameter,
+    outer_wall = tube(
+        h=airlock_height,
+        d=airlock_outer_diameter,
+        thickness=wall_thickness,
         segments=smooth_segments
     )
 
-    bottom = pipe(bottom, translate([0, 0, airlock_height - bottom_height]))
+    inner_wall = tube(
+        h=airlock_height,
+        d=airlock_inner_diameter,
+        thickness=wall_thickness,
+        segments=smooth_segments
+    )
 
-    barb_width = 13.5
-    barb = cylinder(h=barb_width, d1=airlock_inner_diameter, d2=barb_width, segments=smooth_segments)
+    gutter_diameter = (airlock_outer_diameter - airlock_inner_diameter - wall_thickness) / 2
+    gutter_center = (airlock_inner_diameter + gutter_diameter) / 2
+
+    bottom = pipe(
+        cylinder(
+            h=gutter_diameter / 2,
+            d=airlock_outer_diameter,
+            segments=smooth_segments
+        ),
+        translate([0, 0, airlock_height - (gutter_diameter / 2) - wall_thickness])
+    )
+
+    bottom += pipe(
+        cylinder(
+            h=wall_thickness,
+            d=airlock_outer_diameter,
+            segments=smooth_segments
+        ),
+        translate([0, 0, airlock_height - wall_thickness])
+    )
+
+    gutter = pipe(
+        circle(d=gutter_diameter, segments=smooth_segments),
+        translate([gutter_center, 0, 0]),
+        rotate_extrude(convexity=10, segments=smooth_segments),
+        translate([0, 0, airlock_height - (gutter_diameter / 2) - wall_thickness])
+    )
+
+    bottom -= gutter
+
+    barb = cylinder(
+        h=barb_width,
+        d1=airlock_inner_diameter,
+        d2=barb_width,
+        segments=smooth_segments
+    )
 
     cutout = pipe(
-        cylinder(h=airlock_height + 2, d=airlock_inner_diameter-wall_thickness, segments=smooth_segments),
+        cylinder(
+            h=airlock_height + 2,
+            d=airlock_inner_diameter-wall_thickness,
+            segments=smooth_segments
+        ),
         translate([0, 0, -1])
     )
 

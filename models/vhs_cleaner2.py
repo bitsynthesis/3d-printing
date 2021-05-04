@@ -1,8 +1,13 @@
+import math
+
 from solid import *
+
 from shared.main import *
 
 
 RES = 200
+PAD_COLOR = "#00FF00"
+DUMMY_COLOR = "#FF0000"
 
 
 def _guide_post(base_diameter):
@@ -30,66 +35,6 @@ def _guide_post(base_diameter):
     )
 
     return base + foot + neck
-
-
-def _pad(
-    width,
-    wing_width,
-    tape_height,
-    top_tab_height,
-    bottom_tab_height,
-    thickness,
-    tab_thickness
-):
-    pad_depth = 1
-
-    # bottom tab
-    bottom_tab = pipe(
-        cube([width, tab_thickness, bottom_tab_height]),
-        center(0, width),
-        translate([0, pad_depth, 0])
-    )
-
-    # bottom tab pad connector
-    bottom_tab_pad_connector = pipe(
-        cube([width, pad_depth, thickness]),
-        center(0, width),
-        translate([0, thickness, bottom_tab_height])
-    )
-
-    # pad
-    pad_height = tape_height + (thickness * 2)
-    pad_width = width
-    pad = pipe(
-        cube([pad_width, thickness, pad_height]),
-        center(0, pad_width),
-        translate([0, 0, bottom_tab_height])
-    )
-
-    # top tab pad connector
-    top_tab_pad_connector = pipe(
-        cube([width, pad_depth, thickness]),
-        center(0, width),
-        translate([0, thickness, bottom_tab_height + pad_height - thickness])
-    )
-
-    # top tab
-    top_tab = pipe(
-        cube([width, tab_thickness, top_tab_height]),
-        center(0, width),
-        translate([0, pad_depth, bottom_tab_height + pad_height])
-    )
-
-    # left wing
-
-
-    # right wing
-
-    return bottom_tab \
-            + bottom_tab_pad_connector \
-            + pad \
-            + top_tab_pad_connector \
-            + top_tab
 
 
 # TODO this works great... except that the bottom doesn't respect the gaps.
@@ -159,6 +104,65 @@ def _front_wall(body_width, body_thickness, bottom_height):
     return pipe(result, center(0, body_width))
 
 
+# TODO use cylinders instead of cubes for rounded edges
+def _pad(pad_width, body_thickness, body_height, pad_depth, is_gap=False):
+    pad_height = body_height - (body_thickness * 2)
+
+    if is_gap:
+        body_thickness += 0.4
+        pad_depth += 0.4
+        pad_width += -0.4
+
+    diagonal = body_thickness * math.sqrt(2)
+    leg_offset = diagonal + 0.2
+
+    leg_1a = pipe(
+        cube([body_thickness, body_thickness, pad_height]),
+        rotate([0, 0, 45])
+    )
+
+    leg_1b = pipe(
+        cube([body_thickness, body_thickness, pad_height]),
+        rotate([0, 0, 45]),
+        translate([pad_depth - leg_offset, pad_depth - leg_offset, 0])
+    )
+
+    leg_1 = pipe(
+        leg_1a + leg_1b,
+        hull(),
+        center(0, pad_width)
+    )
+
+    leg_2 = pipe(
+        leg_1.copy(),
+        mirror([1, 0, 0])
+    )
+
+    middle = pipe(
+        cube([pad_width, body_thickness, pad_height]),
+        center(0, pad_width)
+    )
+
+    return leg_1 + middle + leg_2
+
+
+def _back_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap, is_gap=False):
+    return pipe(
+        _pad(pad_width, body_thickness, body_height, pad_depth, is_gap),
+        translate([0, pad_depth + body_thickness + pad_gap, 0]),
+        color(PAD_COLOR)
+    )
+
+
+def _front_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap, is_gap=False):
+    return pipe(
+        _pad(pad_width, body_thickness, body_height, pad_depth, is_gap),
+        rotate([0, 0, 180]),
+        translate([0, pad_depth + body_thickness, 0]),
+        color(PAD_COLOR)
+    )
+
+
 def main():
     body_width = 188
     body_depth = 104
@@ -188,7 +192,8 @@ def main():
 
     dummy_spool_1 = pipe(
         cylinder(h=spool_height, d=spool_width, center=True, segments=RES),
-        translate([-46, 56, spool_height / 2])
+        translate([-46, 56, spool_height / 2]),
+        color(DUMMY_COLOR)
     )
 
     spool_hole_2 = pipe(
@@ -198,7 +203,8 @@ def main():
 
     dummy_spool_2 = pipe(
         cylinder(h=spool_height, d=spool_width, center=True, segments=RES),
-        translate([46, 56, spool_height / 2])
+        translate([46, 56, spool_height / 2]),
+        color(DUMMY_COLOR)
     )
 
     bottom = pipe(
@@ -229,7 +235,7 @@ def main():
     guide_post_diameter = 8
 
     # minus 1 for base overhang
-    guide_post_from_front = 3
+    guide_post_from_front = 6
 
     # minus 1 for base overhang
     guide_post_from_side = 20
@@ -262,19 +268,57 @@ def main():
         ])
     )
 
-    final_bottom = bottom \
-        + front_wall \
-        + back_wall \
-        + side_wall_1 \
-        + side_wall_2 \
-        + guide_post_1 \
-        + guide_post_2
+    pad_width = 48
+    pad_gap = 5
+    pad_depth = guide_post_from_front + 1 - (pad_gap / 2)
 
-    final = final_bottom
+    front_pad = _front_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap)
+    back_pad = _back_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap)
 
-    # final += dummy_spool_1 + dummy_spool_2
+    back_pad_retainer = pipe(
+        cube([60, 40, bottom_height]),
+        translate([
+            -30,
+            body_thickness + guide_post_from_front + 1 + (pad_gap / 2) + body_thickness,
+            0
+        ]),
+        sub(dummy_spool_1),
+        sub(dummy_spool_2),
+        sub(_back_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap, is_gap=True))
+    )
 
-    # final = front_wall + side_wall_1 + side_wall_2
+    front_pad_retainer = pipe(
+        cube([pad_width - 0.4, pad_depth + body_thickness, bottom_height]),
+        center(0, pad_width - 0.4),
+        sub(
+            _front_pad(
+                pad_width,
+                body_thickness,
+                body_height,
+                pad_depth,
+                pad_gap,
+                is_gap=True
+            )
+        ),
+    )
+
+    final = cube([0,0,0])
+    final += bottom
+    final += front_wall
+    final += back_wall
+    final += side_wall_1
+    final += side_wall_2
+    final += guide_post_1
+    final += guide_post_2
+    final += front_pad_retainer
+    final += back_pad_retainer
+
+    # final += front_pad
+    # final += back_pad
+    # final += dummy_spool_1
+    # final += dummy_spool_2
+
+    # final = _pad(body_thickness, body_height, pad_depth)
 
     scad_render_to_file(final, "build/vhs_cleaner2.scad")
 

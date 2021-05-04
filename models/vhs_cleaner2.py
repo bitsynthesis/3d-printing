@@ -99,66 +99,64 @@ def _front_wall(body_width, body_thickness, bottom_height):
     # | |--|              |-||
     # ---  ---------------- --
     #
-    #  123 4       5      6789
+    #  a  b        c       d e
 
-    left_gap_offset = 6
-    left_gap_width = 10.5
-    right_gap_offset = 2.25
-    right_gap_width = 4
+    # ------              ----
+    # |    |              |  |
+    # ------------------------
+    #
+    # plus gap holes
+
+    a_width = 6
+    b_width = 10.5
+    d_width = 4
+    e_width = 2.25
+    c_width = body_width \
+            - a_width \
+            - b_width \
+            - d_width \
+            - e_width
+
     gap_depth = 2
-    seg5_width = body_width \
-            - left_gap_offset \
-            - left_gap_width \
-            - right_gap_width \
-            - right_gap_offset
 
-    # layer 1
-    seg1 = cube([left_gap_offset, body_thickness, bottom_height])
-    seg5 = cube([seg5_width, body_thickness, bottom_height])
-    seg9 = cube([right_gap_offset, body_thickness, bottom_height])
+    left_wall = cube([
+        a_width + b_width + body_thickness,
+        gap_depth + body_thickness,
+        bottom_height
+    ])
 
-    layer1 = pipe(
-        seg9,
-        translate([right_gap_width + seg5_width, 0, 0]),
-        add(seg5),
-        translate([left_gap_width + left_gap_offset, 0, 0]),
-        add(seg1),
+    left_gap = pipe(
+        cube([b_width, gap_depth, bottom_height]),
+        translate([a_width, 0, 0]),
+        hole()
     )
 
-    # layer 2
-    seg2 = cube([body_thickness, gap_depth, bottom_height])
-    seg4 = cube([body_thickness, gap_depth, bottom_height])
-    seg6 = cube([body_thickness, gap_depth, bottom_height])
-    seg8 = cube([body_thickness, gap_depth, bottom_height])
+    middle_wall = cube([c_width, body_thickness, bottom_height])
+        # translate([a_width + b_width, 0, 0])
 
-    layer2 = pipe(
-        seg8,
-        translate([right_gap_width + body_thickness, 0, 0]),
-        add(seg6),
-        translate([seg5_width - body_thickness, 0, 0]),
-        add(seg4),
-        translate([left_gap_width + body_thickness, 0, 0]),
-        add(seg2),
-        translate([left_gap_offset - body_thickness, 0, 0]),
-        translate([0, body_thickness, 0]),
+    right_wall = cube([
+        d_width + e_width + body_thickness,
+        gap_depth + body_thickness,
+        bottom_height
+    ])
+
+    right_gap = pipe(
+        cube([d_width, gap_depth, bottom_height]),
+        translate([body_thickness, 0, 0]),
+        hole()
     )
 
-    # layer 3
-    seg3 = cube([left_gap_width, body_thickness, bottom_height])
-    seg7 = cube([right_gap_width, body_thickness, bottom_height])
-
-    layer3 = pipe(
-        seg7,
-        translate([left_gap_width + seg5_width, 0, 0]),
-        add(seg3),
-        translate([left_gap_offset, 0, 0]),
-        translate([0, gap_depth, 0]),
+    result = pipe(
+        right_wall,
+        add(right_gap),
+        translate([c_width - body_thickness, 0, 0]),
+        add(middle_wall),
+        translate([a_width + b_width, 0, 0]),
+        add(left_wall),
+        add(left_gap)
     )
 
-    return pipe(
-        layer1 + layer2 + layer3,
-        center(0, body_width),
-    )
+    return pipe(result, center(0, body_width))
 
 
 def main():
@@ -264,11 +262,11 @@ def main():
         + guide_post_1 \
         + guide_post_2
 
-    final = final_bottom \
-        + dummy_spool_1 \
-        + dummy_spool_2
+    final = final_bottom
 
-    # final = front_wall
+    # final += dummy_spool_1 + dummy_spool_2
+
+    final = front_wall + side_wall_1 + side_wall_2
 
     scad_render_to_file(final, "build/vhs_cleaner2.scad")
 

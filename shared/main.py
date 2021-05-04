@@ -28,3 +28,21 @@ def tube(h, d, thickness, **kwargs):
         solid.translate([0, 0, -1])
     )
     return positive - negative
+
+
+def center(axis, length):
+    """
+    axis: 0 (x), 1 (y), 2 (z)
+    """
+    adjustment = length / -2
+    translation = [0, 0, 0]
+    translation[axis] = adjustment
+    return solid.translate(translation)
+
+
+def add(element):
+    return lambda x: x + element
+
+
+def sub(element):
+    return lambda x: x - element

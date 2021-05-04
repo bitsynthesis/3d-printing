@@ -174,9 +174,11 @@ def main():
     spool_width = 88.5 + 2 # extra 2 is for amount it can move in the hole
     spool_height = 16.25
 
-    bottom = pipe(
-        cube([body_width, body_depth, body_thickness]),
-        translate([body_width / -2, 0, 0])
+    clutch_hole_diameter = 7
+    clutch_hole_from_back = 19.5
+    clutch_hole = pipe(
+        cylinder(h=10, d=clutch_hole_diameter, center=True, segments=RES),
+        translate([0, body_depth - (clutch_hole_diameter / 2) - clutch_hole_from_back, 0])
     )
 
     spool_hole_1 = pipe(
@@ -197,6 +199,14 @@ def main():
     dummy_spool_2 = pipe(
         cylinder(h=spool_height, d=spool_width, center=True, segments=RES),
         translate([46, 56, spool_height / 2])
+    )
+
+    bottom = pipe(
+        cube([body_width, body_depth, body_thickness]),
+        translate([body_width / -2, 0, 0]),
+        sub(clutch_hole),
+        sub(spool_hole_1),
+        sub(spool_hole_2)
     )
 
     front_wall = _front_wall(body_width, body_thickness, bottom_height)
@@ -253,8 +263,6 @@ def main():
     )
 
     final_bottom = bottom \
-        - spool_hole_1 \
-        - spool_hole_2 \
         + front_wall \
         + back_wall \
         + side_wall_1 \
@@ -266,7 +274,7 @@ def main():
 
     # final += dummy_spool_1 + dummy_spool_2
 
-    final = front_wall + side_wall_1 + side_wall_2
+    # final = front_wall + side_wall_1 + side_wall_2
 
     scad_render_to_file(final, "build/vhs_cleaner2.scad")
 

@@ -238,7 +238,7 @@ def main():
     guide_post_from_front = 6
 
     # minus 1 for base overhang
-    guide_post_from_side = 20
+    guide_post_from_side = 6
 
     guide_post_1 = pipe(
         _guide_post(guide_post_diameter),
@@ -269,19 +269,30 @@ def main():
     )
 
     pad_width = 48
-    pad_gap = 5
+    pad_gap = 4
     pad_depth = guide_post_from_front + 1 - (pad_gap / 2)
 
     front_pad = _front_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap)
     back_pad = _back_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap)
 
+    back_pad_retainer_offset = body_thickness \
+            + guide_post_from_front \
+            + 1 \
+            + (pad_gap / 2) \
+            + body_thickness
+
+    back_pad_retainer_width = body_width \
+            - (guide_post_from_side * 2) \
+            - (body_thickness * 2) \
+            - (guide_post_diameter * 2) \
+            - 10
+
+    back_pad_retainer_depth = body_depth - back_pad_retainer_offset
+
     back_pad_retainer = pipe(
-        cube([60, 40, bottom_height]),
-        translate([
-            -30,
-            body_thickness + guide_post_from_front + 1 + (pad_gap / 2) + body_thickness,
-            0
-        ]),
+        cube([back_pad_retainer_width, back_pad_retainer_depth, bottom_height]),
+        center(0, back_pad_retainer_width),
+        translate([0, back_pad_retainer_offset, 0]),
         sub(dummy_spool_1),
         sub(dummy_spool_2),
         sub(_back_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap, is_gap=True))
@@ -302,6 +313,18 @@ def main():
         ),
     )
 
+    back_corner_fill_left = pipe(
+        cube([48, 48, bottom_height]),
+        center(0, body_width),
+        translate([0, body_depth - 48, 0]),
+        sub(dummy_spool_1)
+    )
+
+    back_corner_fill_right = pipe(
+        back_corner_fill_left,
+        mirror([1, 0, 0])
+    )
+
     final = cube([0,0,0])
     final += bottom
     final += front_wall
@@ -312,6 +335,14 @@ def main():
     final += guide_post_2
     final += front_pad_retainer
     final += back_pad_retainer
+    final += back_corner_fill_left
+    final += back_corner_fill_right
+
+    final += pipe(
+        front_pad + back_pad,
+        rotate([0, 0, 180]),
+        translate([0, -5, 0])
+    )
 
     # final += front_pad
     # final += back_pad

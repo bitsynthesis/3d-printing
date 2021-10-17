@@ -166,7 +166,7 @@ def _front_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap, is_ga
 def main():
     body_width = 188
     body_depth = 104
-    body_thickness = 1.25
+    body_thickness = 1.20
     body_height = 25
     # body_height = 5
     # body_height = 12.5
@@ -325,18 +325,34 @@ def main():
         mirror([1, 0, 0])
     )
 
-    final = cube([0,0,0])
-    final += bottom
-    final += front_wall
-    final += back_wall
-    final += side_wall_1
-    final += side_wall_2
-    final += guide_post_1
-    final += guide_post_2
-    final += front_pad_retainer
-    final += back_pad_retainer
-    final += back_corner_fill_left
-    final += back_corner_fill_right
+    final_bottom = cube([0,0,0]) # dummy starter
+    final_bottom += bottom
+    final_bottom += front_wall
+    final_bottom += back_wall
+    final_bottom += side_wall_1
+    final_bottom += side_wall_2
+    final_bottom += guide_post_1
+    final_bottom += guide_post_2
+    final_bottom += front_pad_retainer
+    final_bottom += back_pad_retainer
+    final_bottom += back_corner_fill_left
+    final_bottom += back_corner_fill_right
+
+    # TODO
+    # - modify top and bottom to connect together (connectors, registration pegs)
+    # - top should allow for metal spring from vhs case to hold down spools
+    # - top should fill pad gap down to film plane height (post height)
+    # - base of posts seems hard to clean. maybe a more general 1mm bottom fill of film path?
+    final_top = pipe(
+        final_bottom,
+        mirror([0, 0, 1]),
+        translate([0, 0, bottom_height * 2]),
+        color("#990099")
+    )
+
+    final = cube([0,0,0]) # dummy starter
+    final += final_bottom
+    # final += final_top
 
     final += pipe(
         front_pad + back_pad,

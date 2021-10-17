@@ -46,7 +46,71 @@ def _guide_post(base_diameter):
     return base + foot + neck
 
 
+def _pad(
+    width,
+    wing_width,
+    tape_height,
+    top_tab_height,
+    bottom_tab_height,
+    thickness,
+    tab_thickness
+):
+    pad_depth = 1
+
+    # bottom tab
+    bottom_tab = pipe(
+        cube([width, tab_thickness, bottom_tab_height]),
+        center(0, width),
+        translate([0, pad_depth, 0])
+    )
+
+    # bottom tab pad connector
+    bottom_tab_pad_connector = pipe(
+        cube([width, pad_depth, thickness]),
+        center(0, width),
+        translate([0, thickness, bottom_tab_height])
+    )
+
+    # pad
+    pad_height = tape_height + (thickness * 2)
+    pad_width = width
+    pad = pipe(
+        cube([pad_width, thickness, pad_height]),
+        center(0, pad_width),
+        translate([0, 0, bottom_tab_height])
+    )
+
+    # top tab pad connector
+    top_tab_pad_connector = pipe(
+        cube([width, pad_depth, thickness]),
+        center(0, width),
+        translate([0, thickness, bottom_tab_height + pad_height - thickness])
+    )
+
+    # top tab
+    top_tab = pipe(
+        cube([width, tab_thickness, top_tab_height]),
+        center(0, width),
+        translate([0, pad_depth, bottom_tab_height + pad_height])
+    )
+
+    # left wing
+
+
+    # right wing
+
+    return bottom_tab \
+            + bottom_tab_pad_connector \
+            + pad \
+            + top_tab_pad_connector \
+            + top_tab
+
+
+
+
+
 def _outside_pad(gap_width, total_width, body_height, body_thickness, pad_height):
+
     tab_width = 10
     tab_middle_overhang = 6
     tab_height = pad_height
@@ -252,12 +316,14 @@ def main():
     #     translate([-90, 16, 0])
     # )
 
-    outside_pad = _outside_pad(
+    outside_pad = _pad(
         outside_pad_gap_width,
-        body_width - (body_thickness * 2) - 2,
-        body_height,
+        5,
+        tape_plane_height,
+        body_height - body_thickness - tape_plane_height,
         body_thickness,
-        tape_plane_height
+        body_thickness,
+        body_thickness * 2
     )
 
     inside_pad_width = outside_pad_gap_width - 12
@@ -297,7 +363,8 @@ def main():
         # + cleaning_trough \
         # + support_fill
 
-    final += outside_pad + inside_pad
+    final = outside_pad + inside_pad
+    final = outside_pad
 
     scad_render_to_file(final, "build/vhs_cleaner.scad")
 

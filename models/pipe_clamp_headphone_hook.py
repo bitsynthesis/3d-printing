@@ -22,11 +22,6 @@ hook_thickness = (clamp_inner_diameter + (clamp_thickness * 2)) / 2
 smooth_segments = 250
 
 
-# /| |\
-# \| |_\__,
-
-
-
 def tab(is_nut=True):
     base = cube([0.1, tab_thickness, tab_height])
 

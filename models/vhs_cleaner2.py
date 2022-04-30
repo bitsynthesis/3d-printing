@@ -10,6 +10,7 @@ PAD_COLOR = "#00FF00"
 DUMMY_COLOR = "#FF0000"
 
 
+# metal insert is 16mm high
 def _guide_post(base_diameter):
     """
     Create a post for mounting metal guide tube salvaged from a commercial VHS
@@ -97,38 +98,68 @@ def _front_wall(body_width, body_thickness, bottom_height):
 # TODO use cylinders instead of cubes for rounded edges
 def _pad(pad_width, body_thickness, body_height, pad_depth, is_gap=False):
     pad_height = body_height - (body_thickness * 2)
-    leg_width = 14
+    # leg_width = 14
 
     if is_gap:
         body_thickness += 0.4
         pad_depth += 0.4
         pad_width += -0.4
-        leg_width += 0.4
+        # leg_width += 0.4
+        pad_height += body_thickness
 
     leg_depth = pad_depth - body_thickness
 
-    # diagonal = body_thickness * math.sqrt(2)
-    # leg_offset = diagonal + 0.2
+    # leg_1a = pipe(
+    #     cube([body_thickness, leg_depth, pad_height]),
+    #     translate([leg_width - body_thickness, 0, 0]),
+    # )
+    # leg_1b = pipe(
+    #     cube([leg_width, body_thickness, pad_height]),
+    #     translate([0, leg_depth, 0]),
+    # )
+    #
+    # leg_1 = pipe(
+    #     leg_1a + leg_1b,
+    #     translate([(pad_width / 2) - leg_width, 0, 0]),
+    # )
+    #
+    # leg_2 = pipe(leg_1.copy(), mirror([1, 0, 0]))
+    #
+    # middle = pipe(cube([pad_width, body_thickness, pad_height]), center(0, pad_width))
+    #
+    # return leg_1 + middle  + leg_2
+
+    diagonal = body_thickness * math.sqrt(2)
+    leg_offset = diagonal + 0.2
 
     leg_1a = pipe(
-        cube([body_thickness, leg_depth, pad_height]),
-        translate([leg_width - body_thickness, 0, 0]),
+        cube([body_thickness, body_thickness, pad_height]),
+        rotate([0, 0, 45])
     )
+
     leg_1b = pipe(
-        cube([leg_width, body_thickness, pad_height]),
-        translate([0, leg_depth, 0]),
+        cube([body_thickness, body_thickness, pad_height]),
+        rotate([0, 0, 45]),
+        translate([pad_depth - leg_offset, pad_depth - leg_offset, 0])
     )
 
     leg_1 = pipe(
         leg_1a + leg_1b,
-        translate([(pad_width / 2) - leg_width, 0, 0]),
+        hull(),
+        center(0, pad_width)
     )
 
-    leg_2 = pipe(leg_1.copy(), mirror([1, 0, 0]))
+    leg_2 = pipe(
+        leg_1.copy(),
+        mirror([1, 0, 0])
+    )
 
-    middle = pipe(cube([pad_width, body_thickness, pad_height]), center(0, pad_width))
+    middle = pipe(
+        cube([pad_width, body_thickness, pad_height]),
+        center(0, pad_width)
+    )
 
-    return leg_1 + middle  + leg_2
+    return leg_1 + middle + leg_2
 
 
 def _back_pad(pad_width, body_thickness, body_height, pad_depth, pad_gap, is_gap=False):
@@ -196,23 +227,25 @@ def main():
     body_height = 25
     # body_height = 5
     # body_height = 12.5
-    bottom_height = body_height / 2
+    # bottom_height = body_height / 2
+    bottom_height = body_height - body_thickness
     top_height = body_height / 2
     tape_plane_height = 16
 
     spool_hole_diameter = 34
     spool_width = 88.5 + 2  # extra 2 is for amount it can move in the hole
-    spool_height = 16.25
+    # spool_height = 16.25 # TODO will need more padding to move freely
+    spool_height = body_height
 
     # TODO FIXME DEBUG
-    bottom_height = spool_height
+    # bottom_height = spool_height
 
     clutch_hole_diameter = 7
     clutch_hole_from_back = 19.5
     clutch_hole = pipe(
-        cylinder(h=10, d=clutch_hole_diameter, center=True, segments=RES),
+        cylinder(h=body_height, d=clutch_hole_diameter, center=True, segments=RES),
         translate(
-            [0, body_depth - (clutch_hole_diameter / 2) - clutch_hole_from_back, 0]
+            [0, body_depth - (clutch_hole_diameter / 2) - clutch_hole_from_back, body_height / 2]
         ),
     )
 
@@ -241,7 +274,6 @@ def main():
     bottom = pipe(
         cube([body_width, body_depth, body_thickness]),
         translate([body_width / -2, 0, 0]),
-        sub(clutch_hole),
         sub(spool_hole_1),
         sub(spool_hole_2),
     )
@@ -371,22 +403,48 @@ def main():
     final_bottom += back_corner_fill_left
     final_bottom += back_corner_fill_right
     final_bottom -= hacky_round_corner_patches
+    final_bottom -= clutch_hole
 
     # TODO
     # - modify top and bottom to connect together (connectors, registration pegs)
     # - top should allow for metal spring from vhs case to hold down spools
     # - top should fill pad gap down to film plane height (post height)
     # - base of posts seems hard to clean. maybe a more general 1mm bottom fill of film path?
+
+    # TODO
+    # - screw holes (x4) for top, with matching hex inserts for bottom
+    #   - can be deeper sections of top
+    # - matching guide posts
+    # - space for spool retention spring
+    top_height = body_thickness * 5
     final_top = pipe(
-        final_bottom,
-        mirror([0, 0, 1]),
-        translate([0, 0, bottom_height * 2]),
+        cube([body_width, body_depth, top_height]),
+        translate([body_width / -2, 0, body_height - top_height]),
+        sub(final_bottom),
+    )
+
+    # top_guide_posts = pipe(
+    #     guide_post_1.copy() + guide_post_2.copy(),
+    #     mirror([0, 0, 1]),
+    #     translate([
+    #         0,
+    #         0,
+    #         body_thickness + body_thickness + 18,
+    #     ]),
+    # )
+    #
+    # final_top = top_guide_posts
+
+    final_top = pipe(
+        final_top,
         color("#990099"),
+        rotate([180, 0, 180]),
+        translate([0, body_depth + 10, body_height]),
     )
 
     final = cube([0, 0, 0])  # dummy starter
     final += final_bottom
-    # final += final_top
+    final += final_top
 
     final += pipe(front_pad + back_pad, rotate([0, 0, 180]), translate([0, -5, 0]))
 

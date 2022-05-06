@@ -1,6 +1,18 @@
 import math
 
 from solid import *
+from solid_state import (
+    compose,
+    get_attributes,
+    get_object,
+    get_objects,
+    get_transformations,
+    join,
+    pipe,
+    save_state,
+    state,
+    transform_like,
+)
 
 from shared.main import *
 
@@ -10,16 +22,13 @@ PAD_COLOR = "#00FF00"
 DUMMY_COLOR = "#FF0000"
 
 
-# metal insert is 16mm high
-def _guide_post(base_diameter):
+@state("guide-post")
+def _guide_post(base_diameter, base_height=1, foot_height=2.5, neck_height=5.5):
     """
     Create a post for mounting metal guide tube salvaged from a commercial VHS
-    tape. Minimum base_diameter is 6 (mm).
+    tape. Minimum base_diameter is 6 (mm). Metal sleeve used from VHS cassette
+    is 16mm high.
     """
-    base_height = 1
-    foot_height = 2.5
-    neck_height = 5.5
-
     base = pipe(
         cylinder(h=base_height, d=base_diameter, center=True, segments=RES),
         translate([0, 0, base_height / 2]),
@@ -38,8 +47,7 @@ def _guide_post(base_diameter):
     return base + foot + neck
 
 
-# TODO this works great... except that the bottom doesn't respect the gaps.
-# could instead implement the gaps as holes?
+@state("front-wall")
 def _front_wall(body_width, body_thickness, bottom_height):
     # |                      |
     # | |--|              |-||
@@ -133,31 +141,20 @@ def _pad(pad_width, body_thickness, body_height, pad_depth, is_gap=False):
     leg_offset = diagonal + 0.2
 
     leg_1a = pipe(
-        cube([body_thickness, body_thickness, pad_height]),
-        rotate([0, 0, 45])
+        cube([body_thickness, body_thickness, pad_height]), rotate([0, 0, 45])
     )
 
     leg_1b = pipe(
         cube([body_thickness, body_thickness, pad_height]),
         rotate([0, 0, 45]),
-        translate([pad_depth - leg_offset, pad_depth - leg_offset, 0])
+        translate([pad_depth - leg_offset, pad_depth - leg_offset, 0]),
     )
 
-    leg_1 = pipe(
-        leg_1a + leg_1b,
-        hull(),
-        center(0, pad_width)
-    )
+    leg_1 = pipe(leg_1a + leg_1b, hull(), center(0, pad_width))
 
-    leg_2 = pipe(
-        leg_1.copy(),
-        mirror([1, 0, 0])
-    )
+    leg_2 = pipe(leg_1.copy(), mirror([1, 0, 0]))
 
-    middle = pipe(
-        cube([pad_width, body_thickness, pad_height]),
-        center(0, pad_width)
-    )
+    middle = pipe(cube([pad_width, body_thickness, pad_height]), center(0, pad_width))
 
     return leg_1 + middle + leg_2
 
@@ -179,6 +176,7 @@ def _front_pad(
         translate([0, pad_depth + body_thickness, 0]),
         color(PAD_COLOR),
     )
+
 
 def _hacky_round_corner_patches(bottom_height, body_thickness):
     diameter_1 = 4
@@ -220,6 +218,7 @@ def _hacky_round_corner_patches(bottom_height, body_thickness):
 
     return right_side + left_side
 
+
 def main():
     body_width = 188
     body_depth = 104
@@ -245,7 +244,11 @@ def main():
     clutch_hole = pipe(
         cylinder(h=body_height, d=clutch_hole_diameter, center=True, segments=RES),
         translate(
-            [0, body_depth - (clutch_hole_diameter / 2) - clutch_hole_from_back, body_height / 2]
+            [
+                0,
+                body_depth - (clutch_hole_diameter / 2) - clutch_hole_from_back,
+                body_height / 2,
+            ]
         ),
     )
 
@@ -303,6 +306,8 @@ def main():
     # minus 1 for base overhang
     guide_post_from_side = 6
 
+    # TODO
+    guide_post_attributes = dict(diameter=8, dist_from_side=6, dist_from_front=6)
     guide_post_1 = pipe(
         _guide_post(guide_post_diameter),
         translate([guide_post_diameter / -2, guide_post_diameter / 2, body_thickness]),
@@ -313,7 +318,13 @@ def main():
                 0,
             ]
         ),
+        save_state(
+            name="guide-post-bottom",
+            attributes=guide_post_attributes,
+        ),
     )
+
+    # import pdb;pdb.set_trace()
 
     guide_post_2 = pipe(
         _guide_post(guide_post_diameter),
@@ -325,9 +336,13 @@ def main():
                 0,
             ]
         ),
+        save_state(
+            name="guide-post-bottom",
+            attributes=guide_post_attributes,
+        ),
     )
 
-    pad_width = 44 # 48
+    pad_width = 44  # 48
     pad_gap = 4
     pad_depth = guide_post_from_front + 1 - (pad_gap / 2)
 
@@ -388,7 +403,9 @@ def main():
 
     back_corner_fill_right = pipe(back_corner_fill_left, mirror([1, 0, 0]))
 
-    hacky_round_corner_patches = _hacky_round_corner_patches(bottom_height, body_thickness)
+    hacky_round_corner_patches = _hacky_round_corner_patches(
+        bottom_height, body_thickness
+    )
 
     final_bottom = cube([0, 0, 0])  # dummy starter
     final_bottom += bottom
@@ -423,20 +440,29 @@ def main():
         sub(final_bottom),
     )
 
-    # top_guide_posts = pipe(
-    #     guide_post_1.copy() + guide_post_2.copy(),
-    #     mirror([0, 0, 1]),
-    #     translate([
-    #         0,
-    #         0,
-    #         body_thickness + body_thickness + 18,
-    #     ]),
-    # )
-    #
-    # final_top = top_guide_posts
+
+    # create top guide posts
+    for guide_post_container in get_objects(final_bottom, ".guide-post-bottom"):
+        top_post1 = get_object(guide_post_container, ".guide-post")
+        tp1_attr = get_attributes(top_post1)
+        top_post_base_height = 10
+        post_height = tp1_attr["base_height"] + tp1_attr["foot_height"] + tp1_attr["neck_height"]
+
+        top_post1 = pipe(
+            top_post1,
+            mirror([0, 0, 1]),
+            add(cylinder(h=top_post_base_height, d=tp1_attr["base_diameter"], segments=RES)),
+            translate([0, 0, post_height * 2]),
+            transform_like(guide_post_container, ".guide-post"),
+            color("teal"),
+            save_state("top-post"),
+        )
+
+        final_top += top_post1
+
 
     final_top = pipe(
-        final_top,
+        final_top + top_post1,
         color("#990099"),
         rotate([180, 0, 180]),
         translate([0, body_depth + 10, body_height]),
@@ -448,6 +474,16 @@ def main():
 
     final += pipe(front_pad + back_pad, rotate([0, 0, 180]), translate([0, -5, 0]))
 
+    # # TODO this is an example of how state functions might work
+    # top_gp_base = pipe(
+    #     cylinder(
+    #         d=get_attribute(final, "guide_post_1.guide_post", "diameter"),
+    #         h=10,
+    #     ),
+    #     # replicate any transformations this state underwent
+    #     transform_like("top.guide_post_1.guide_post"),
+    # )
+
     # final += front_pad
     # final += back_pad
     # final += dummy_spool_1
@@ -455,7 +491,15 @@ def main():
 
     # final = _pad(body_thickness, body_height, pad_depth)
 
-    scad_render_to_file(final, "build/vhs_cleaner2.scad")
+    # import pdb; pdb.set_trace()
+
+    render_objects(
+        final,
+        [".guide-post-bottom", ".top-post"],
+        "build/vhs_cleaner2.scad"
+    )
+
+    # scad_render_to_file(final, "build/vhs_cleaner2.scad")
 
 
 if __name__ == "__main__":

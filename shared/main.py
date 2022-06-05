@@ -44,6 +44,10 @@ def center(axis, length):
     return solid.translate(translation)
 
 
+def in_to_mm(inches):
+    return inches * 25.4
+
+
 # TODO move to solid_state
 def sub(element):
     return lambda x: x - element
@@ -173,14 +177,48 @@ def add(element):
 # #     get_object("body.tape_path.guide_post")
 
 
-# TODO move to solid_state
-def render_objects(scad_obj, names, file_path):
+# TODO
+# - move to solid_state
+# - could allow rendering in place (how it currently works)
+#   OR rendering selected states with transformations applied
+#   to get them to their location in final state (scad_obj)
+# - names should really be a single query (or at least a list
+#   of queries, but given that queries already support lists
+#   of paths that seems odd. this has some implications for
+#   how groups of objects are colored
+def render_objects(scad_obj, names, file_path, transform=True, colorize=True):
     """
     Render all objects with matching solid_state names to file.
     """
+    # TODO support color schemes, also cycle to not overflow
+    colors = [
+        "maroon",
+        "olive",
+        "green",
+        "teal",
+        "navy",
+        "purple",
+    ]
+
     combined = solid.cube([0, 0, 0])
-    for name in names:
-        for obj in solid_state.get_objects(scad_obj, name):
+    for i, name in enumerate(names):
+        objects = solid_state.get_objects(scad_obj, name)
+        if transform is True:
+            # TODO should get_transformations just return composed already?
+            # will i ever want to do anything but apply them as a whole?
+            transformations = map(
+                lambda t: solid_state.compose(*t),
+                solid_state.get_transformations(scad_obj, name)
+            )
+
+            objects = [
+                func(obj) for func, obj in zip(transformations, objects)
+            ]
+
+        if colorize is True:
+            objects = map(solid.color(colors[i]), objects)
+
+        for obj in objects:
             combined += obj
 
     print(combined)

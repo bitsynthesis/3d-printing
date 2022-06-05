@@ -1,1 +1,2 @@
 solidpython
+../solid_state/

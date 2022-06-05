@@ -422,6 +422,8 @@ def main():
     final_bottom -= hacky_round_corner_patches
     final_bottom -= clutch_hole
 
+    final_bottom = save_state("final-bottom")(final_bottom)
+
     # TODO
     # - modify top and bottom to connect together (connectors, registration pegs)
     # - top should allow for metal spring from vhs case to hold down spools
@@ -433,39 +435,44 @@ def main():
     #   - can be deeper sections of top
     # - matching guide posts
     # - space for spool retention spring
-    top_height = body_thickness * 5
+    top_height = body_thickness * 3 # TODO what should this actually be?
     final_top = pipe(
         cube([body_width, body_depth, top_height]),
         translate([body_width / -2, 0, body_height - top_height]),
         sub(final_bottom),
+        save_state("final-bottom"),
     )
 
 
     # create top guide posts
-    for guide_post_container in get_objects(final_bottom, ".guide-post-bottom"):
-        top_post1 = get_object(guide_post_container, ".guide-post")
-        tp1_attr = get_attributes(top_post1)
-        top_post_base_height = 10
-        post_height = tp1_attr["base_height"] + tp1_attr["foot_height"] + tp1_attr["neck_height"]
+    for container in get_objects(final_bottom, ".guide-post-bottom"):
+        post = get_object(container, ".guide-post")
+        attrs = get_attributes(post)
+        post_height = (
+            attrs["base_height"] + attrs["foot_height"] + attrs["neck_height"]
+        )
+        total_top_post_height = body_height - post_height - body_thickness
+        extension_height = total_top_post_height - post_height
 
-        top_post1 = pipe(
-            top_post1,
+        post = pipe(
+            post,
             mirror([0, 0, 1]),
-            add(cylinder(h=top_post_base_height, d=tp1_attr["base_diameter"], segments=RES)),
+            add(cylinder(h=extension_height, d=attrs["base_diameter"], segments=RES)),
             translate([0, 0, post_height * 2]),
-            transform_like(guide_post_container, ".guide-post"),
-            color("teal"),
-            save_state("top-post"),
+            transform_like(container, ".guide-post"),
+            save_state("guide-post-top"),
         )
 
-        final_top += top_post1
+        final_top += post
 
+    final_top = save_state("top")(final_top)
 
     final_top = pipe(
-        final_top + top_post1,
+        final_top,
         color("#990099"),
         rotate([180, 0, 180]),
         translate([0, body_depth + 10, body_height]),
+        save_state("final-top"),
     )
 
     final = cube([0, 0, 0])  # dummy starter
@@ -493,13 +500,15 @@ def main():
 
     # import pdb; pdb.set_trace()
 
+    # TODO overhaul render_objects, it's a wee bit f'd rn
     render_objects(
         final,
-        [".guide-post-bottom", ".top-post"],
-        "build/vhs_cleaner2.scad"
+        [".guide-post-bottom", ".top"],
+        "build/vhs_cleaner2.scad",
+        transform=False
     )
 
-    # scad_render_to_file(final, "build/vhs_cleaner2.scad")
+    # scad_render_to_file(final_top, "build/vhs_cleaner2.scad")
 
 
 if __name__ == "__main__":

@@ -13,7 +13,7 @@ build/%.stl: build/%.scad
 	openscad -o $@ $<
 
 build/%.scad: $(VENV) build
-	. $</bin/activate && PYTHONPATH=. python $(patsubst build/%.scad,models/%.py,$@)
+	PYTHONPATH=. python $(patsubst build/%.scad,models/%.py,$@)
 
 $(VENV):
 	python3 -m venv $@

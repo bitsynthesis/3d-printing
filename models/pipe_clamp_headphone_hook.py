@@ -1,5 +1,8 @@
 import functools
+
 from solid import *
+import solid_state
+
 from shared.main import *
 
 
@@ -22,7 +25,8 @@ hook_thickness = (clamp_inner_diameter + (clamp_thickness * 2)) / 2
 smooth_segments = 250
 
 
-def tab(is_nut=True):
+@solid_state.state("tab")
+def _tab(is_nut=True):
     base = cube([0.1, tab_thickness, tab_height])
 
     shaft_hole_diameter = 3.5
@@ -74,21 +78,18 @@ def tab(is_nut=True):
         ]),
     )
 
-    # TODO hull base and node together to form triangle tab
-
     return pipe(base + node, hull()) - combined_hole
 
 
-def main():
-    # hook bed 75mm
-
-
-    # \------/
-
-    inner = cylinder(
-        h=clamp_height,
-        d=clamp_inner_diameter,
-        segments=smooth_segments,
+@solid_state.state("body")
+def _body():
+    inner = pipe(
+        cylinder(
+            h=clamp_height,
+            d=clamp_inner_diameter,
+            segments=smooth_segments,
+        ),
+        hole(),
     )
 
     outer = cylinder(
@@ -99,13 +100,14 @@ def main():
 
     gap = pipe(
         cube([clamp_outer_diameter, clamp_gap, clamp_height]),
-        translate([0, clamp_gap / -2, 0])
+        translate([0, clamp_gap / -2, 0]),
+        hole(),
     )
 
     tab_gap_offset = clamp_gap / 2
 
     tab1 = pipe(
-        tab(is_nut=True),
+        _tab(is_nut=True),
         translate([
             clamp_inner_diameter / 2,
             tab_gap_offset,
@@ -114,7 +116,7 @@ def main():
     )
 
     tab2 = pipe(
-        tab(is_nut=False),
+        _tab(is_nut=False),
         translate([
             clamp_inner_diameter / 2,
             0 - tab_thickness - tab_gap_offset,
@@ -122,7 +124,12 @@ def main():
         ])
     )
 
-    hook = pipe(
+    return outer + inner + gap + tab1 + tab2
+
+
+@solid_state.state("hook")
+def _hook():
+    return pipe(
         polygon(points=[
             [0, 0],
             [hook_bed_width - hook_height, 0],
@@ -137,9 +144,14 @@ def main():
         translate([0, hook_thickness / -2, 0]),
     )
 
-    final = outer + hook - inner - gap + tab1 + tab2
 
-    scad_render_to_file(final, "build/pipe_clamp_headphone_hook.scad")
+@solid_state.state("final")
+def _final():
+    return _body() + _hook()
+
+
+def main():
+    scad_render_to_file(_final(), "build/pipe_clamp_headphone_hook.scad")
 
 
 if __name__ == "__main__":

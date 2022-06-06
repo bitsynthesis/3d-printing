@@ -89,7 +89,7 @@ def main():
     smooth_segments = 200
     grip_segments = 24
     airlock_height = 15
-    airlock_top_width = 5
+    airlock_top_width = 3
 
     lid = _lid(
         inner_diameter=inner_diameter,
@@ -115,13 +115,13 @@ def main():
     iw_od = ow_id - (airlock_top_width * 4) - airlock_height
     iw_id = iw_od - airlock_height
 
-    inner_wall = _retaining_wall(iw_id, iw_od, airlock_top_width, smooth_segments)
+    inner_wall = _retaining_wall(iw_id, iw_od, airlock_top_width, grip_segments)
 
     airlock_hole = cylinder(
         h=100,
         d=iw_id - (airlock_top_width * 2),
         center=True,
-        segments=smooth_segments
+        segments=grip_segments
     )
 
     final = lid + outer_wall + inner_wall - airlock_hole

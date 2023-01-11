@@ -12,7 +12,7 @@ body_segment_width = 8
 support_height = 20
 
 
-handle_height = 90
+handle_height = 200
 handle_diameter = 20
 handle_segments = 8
 
